@@ -1,14 +1,15 @@
-print("Project :: R11600392")
+print("\nProject :: R11600392\n")
 
 import sys, getopt
 
 def main(argv):
    inputfile = ''
    outputfile = ''
+   tnumber = ''
    try:
-      opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
+      opts, args = getopt.getopt(argv,"hi:o:t",["ifile=","ofile=","tnumb="])
    except getopt.GetoptError:
-      print('Krystyna_Urbanczyk_R11600392_final_project.py -i <path_to_input_file> -o <path_to_output_file>')
+      print('Krystyna_Urbanczyk_R11600392_final_project.py -i <path_to_input_file> -o <path_to_output_file> -t <>')
       sys.exit(2)
    for opt, arg in opts:
       if opt == '-h':
@@ -18,12 +19,12 @@ def main(argv):
          inputfile = arg
       elif opt in ("-o", "--ofile"):
          outputfile = arg
-      #elif opt in ("-t", "--tnumb"):
-         #
-   print('Input file is "', inputfile)
-   print('Output file is "', outputfile)
+      elif opt in ("-t", "--tnumb"):
+         tnumber = arg
+   print('Reading input from ', inputfile, "\n")
+   
    # Read in Matrix from file 
-   file1 = open('time_step_0.dat', 'r') 
+   file1 = open(inputfile, 'r') 
    Lines = file1.readlines() 
    
    # Matrix containing first time step
@@ -41,7 +42,9 @@ def main(argv):
       for char in row:
          r.append(char)
       nextmatrix.append(r)
-   
+
+   print("Simulating...\n")
+
    printmatrix(currentmatrix, 0)
    # initialize time step count
    # print time step # 0-100
@@ -60,11 +63,13 @@ def main(argv):
       printmatrix(currentmatrix, countstep+1)
    
    # Writing to file 
-   file2 = open('time_step_100.dat', 'w') 
+   file2 = open(outputfile, 'w') 
    for row in nextmatrix:
       for char in row: 
          print(char,sep="",end="",file=file2)
       print("",file=file2)
+
+   print('Simulation complete. Final result stored in output file ', outputfile)
    
 def printmatrix(currentprint, timestep):
    print("Time Step #", timestep)
