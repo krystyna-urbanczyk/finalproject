@@ -1,26 +1,37 @@
 print("\nProject :: R11600392\n")
 
 import sys, getopt
+import multiprocessing
+from multiprocessing import Process
 
 def main(argv):
    inputfile = ''
    outputfile = ''
    tnumber = ''
    try:
-      opts, args = getopt.getopt(argv,"hi:o:t",["ifile=","ofile=","tnumb="])
+      opts, args = getopt.getopt(argv,"hi:o:t:",["ifile=","ofile=","tnumb="])
    except getopt.GetoptError:
-      print('Krystyna_Urbanczyk_R11600392_final_project.py -i <path_to_input_file> -o <path_to_output_file> -t <>')
+      print('Krystyna_Urbanczyk_R11600392_final_project.py -i <path_to_input_file> -o <path_to_output_file> -t <int>')
       sys.exit(2)
    for opt, arg in opts:
       if opt == '-h':
-         print('Krystyna_Urbanczyk_R11600392_final_project.py -i <path_to_input_file> -o <path_to_output_file>')
+         print('Krystyna_Urbanczyk_R11600392_final_project.py -i <path_to_input_file> -o <path_to_output_file> -t <int>')
          sys.exit()
       elif opt in ("-i", "--ifile"):
          inputfile = arg
       elif opt in ("-o", "--ofile"):
          outputfile = arg
       elif opt in ("-t", "--tnumb"):
-         tnumber = arg
+         tnumber = int(arg)
+
+         # if t not provided
+            # t = 1 (default value)
+         # elif t is provided
+            # if t > 0
+               # tnumber = arg
+            # else
+               # error 
+         
    print('Reading input from ', inputfile, "\n")
    
    # Read in Matrix from file 
@@ -45,26 +56,54 @@ def main(argv):
 
    print("Simulating...\n")
 
+   # Print the initial matrix
    printmatrix(currentmatrix, 0)
-   # initialize time step count
+
    # print time step # 0-100
    for countstep in range(100):
-      # perform actions on nextmatrix
-      nextmatrix = simulate(currentmatrix, nextmatrix)
-      # clear current matrix
+      # Create processes target simulate 
+      # Give each process a section of rows and a copy of current step
+      myProcs = list()
+
+      splitBy = int((len(currentmatrix))/tnumber)
+      currPos = 0
+      q = multiprocessing.Queue()
+      while(currPos < len(currentmatrix)):
+         p = Process(target=simulate, args=(currentmatrix, nextmatrix, currPos, currPos+splitBy, q))
+         myProcs.append(p)
+         p.start()
+         currPos += splitBy
+
+      for p in myProcs:
+         p.join()
       currentmatrix = []
+      while(not q.empty()):
+         result = q.get()
+         for row in result:
+            currentmatrix.append(row)
+      
+
+
+
+      # perform actions on nextmatrix
+      #nextmatrix = simulate(currentmatrix, nextmatrix, start, end)
+      
+      # clear current matrix
+      #currentmatrix = []
+      
       # copy nextmatrix to currentmatrix
-      for row in nextmatrix:
-         rows = []
-         for char in row:
-            rows.append(char)
-         currentmatrix.append(rows)
+      #for row in nextmatrix:
+         #rows = []
+         #for char in row:
+            #rows.append(char)
+         #currentmatrix.append(rows)
+      
       # print time step # and currentmatrix after actions
       printmatrix(currentmatrix, countstep+1)
    
    # Writing to file 
    file2 = open(outputfile, 'w') 
-   for row in nextmatrix:
+   for row in currentmatrix:
       for char in row: 
          print(char,sep="",end="",file=file2)
       print("",file=file2)
@@ -77,16 +116,15 @@ def printmatrix(currentprint, timestep):
       print(row)
    print("\n\n")
 
-def simulate(currenttime, nexttime):
+# Add inputs for target rows 
+def simulate(currenttime, nexttime, start, end, q):
+
    r = 0
    c = 0
    maxr = len(currenttime)-1
    maxc = len(currenttime[0])-1
 
-
-   # Start at currenttime[0][0] 
-
-   for r in range(maxr+1):
+   for r in range(start,end):
       for c in range(maxc+1):
          Cell = currenttime[r][c]
          rPlus1 = r + 1
@@ -132,47 +170,30 @@ def simulate(currenttime, nexttime):
          #print(n6 + " " + n7 + " " + n8 + "\n")
 
          nliving = 0
-         ndead = 0
 
          if n1 == "O":
             nliving = nliving + 1
-         else:
-            ndead = ndead + 1
 
          if n2 == "O":
             nliving = nliving + 1
-         else:
-            ndead = ndead + 1
 
          if n3 == "O":
             nliving = nliving + 1
-         else:
-            ndead = ndead + 1
 
          if n4 == "O":
             nliving = nliving + 1
-         else:
-            ndead = ndead + 1
          
          if n5 == "O":
             nliving = nliving + 1
-         else:
-            ndead = ndead + 1
 
          if n6 == "O":
             nliving = nliving + 1
-         else:
-            ndead = ndead + 1
 
          if n7 == "O":
             nliving = nliving + 1
-         else:
-            ndead = ndead + 1
 
          if n8 == "O":
             nliving = nliving + 1
-         else:
-            ndead = ndead + 1
 
 
          if Cell == "O":
@@ -189,7 +210,7 @@ def simulate(currenttime, nexttime):
             else:
                   nexttime[r][c] = "."
          
-   return nexttime
+   return q.put(nexttime[start:end], start)
 
    # if Cell is alive 
    #     if number of living neighbors == 2 | 3 | 4 
