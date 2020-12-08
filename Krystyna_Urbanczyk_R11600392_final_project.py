@@ -23,14 +23,6 @@ def main(argv):
          outputfile = arg
       elif opt in ("-t", "--tnumb"):
          tnumber = int(arg)
-
-         # if t not provided
-            # t = 1 (default value)
-         # elif t is provided
-            # if t > 0
-               # tnumber = arg
-            # else
-               # error 
          
    print('Reading input from ', inputfile, "\n")
    
@@ -61,13 +53,12 @@ def main(argv):
 
    # print time step # 0-100
    for countstep in range(100):
-      # Create processes target simulate 
-      # Give each process a section of rows and a copy of current step
       myProcs = list()
 
       splitBy = int((len(currentmatrix))/tnumber)
       currPos = 0
       q = multiprocessing.Queue()
+      # Call simulate to perform actions on matrix
       while(currPos < len(currentmatrix)):
          p = Process(target=simulate, args=(currentmatrix, nextmatrix, currPos, currPos+splitBy, q))
          myProcs.append(p)
@@ -76,27 +67,12 @@ def main(argv):
 
       for p in myProcs:
          p.join()
+      # clear current matrix
       currentmatrix = []
       while(not q.empty()):
          result = q.get()
          for row in result:
             currentmatrix.append(row)
-      
-
-
-
-      # perform actions on nextmatrix
-      #nextmatrix = simulate(currentmatrix, nextmatrix, start, end)
-      
-      # clear current matrix
-      #currentmatrix = []
-      
-      # copy nextmatrix to currentmatrix
-      #for row in nextmatrix:
-         #rows = []
-         #for char in row:
-            #rows.append(char)
-         #currentmatrix.append(rows)
       
       # print time step # and currentmatrix after actions
       printmatrix(currentmatrix, countstep+1)
@@ -116,7 +92,7 @@ def printmatrix(currentprint, timestep):
       print(row)
    print("\n\n")
 
-# Add inputs for target rows 
+# Perform actions on matrix
 def simulate(currenttime, nexttime, start, end, q):
 
    r = 0
@@ -132,6 +108,7 @@ def simulate(currenttime, nexttime, start, end, q):
          rMinus1 = r - 1
          cMinus1 = c - 1
 
+         # Loop around the matrix for neighbors
          if rPlus1 > maxr:
             rPlus1 = 0
          
@@ -143,19 +120,8 @@ def simulate(currenttime, nexttime, start, end, q):
          
          if cMinus1 < 0:
             cMinus1 = maxc
-         
-         # always 8 neighbors
-         # matrix[row][columm]
-         # neighbors of Cell aka matrix[r][c]
-         #  matrix[r-1][c-1]
-         #  matrix[r-1][c]
-         #  matrix[r-1][c+1]
-         #  matrix[r][c-1]
-         #  matrix[r][c+1]
-         #  matrix[r+1][c-1]
-         #  matrix[r+1][c]
-         #  matrix[r+1][c+1]
 
+         # Get all the neighbors of the selected cell
          n1 = currenttime[rMinus1][cMinus1]
          n2 = currenttime[rMinus1][c]
          n3 = currenttime[rMinus1][cPlus1]
@@ -165,10 +131,7 @@ def simulate(currenttime, nexttime, start, end, q):
          n7 = currenttime[rPlus1][c]
          n8 = currenttime[rPlus1][cPlus1]
 
-         #print(n1 + " " + n2 + " " + n3 + "\n")
-         #print(n4 + " " + Cell + " " + n5 + "\n")
-         #print(n6 + " " + n7 + " " + n8 + "\n")
-
+         # Count the number of living neighbors
          nliving = 0
 
          if n1 == "O":
@@ -195,7 +158,7 @@ def simulate(currenttime, nexttime, start, end, q):
          if n8 == "O":
             nliving = nliving + 1
 
-
+         # Determine if the selected cell will be alive or dead in next time step
          if Cell == "O":
             if nliving == 2 or nliving == 3 or nliving == 4:
                nexttime[r][c] = "O"
@@ -211,32 +174,6 @@ def simulate(currenttime, nexttime, start, end, q):
                   nexttime[r][c] = "."
          
    return q.put(nexttime[start:end], start)
-
-   # if Cell is alive 
-   #     if number of living neighbors == 2 | 3 | 4 
-   #           Cell = alive for next time step
-   #     else
-   #           Cell = dead for next time step
-
-   # if Cell is dead 
-   #     if number of living neighbors > 0 
-   #           if iseven number of living neighbors
-   #                 Cell = alive for next time step
-   #           else
-   #                 Cell = dead for next time step
-   #     else
-   #           Cell = dead for next time step
-
-   # read in input file with matrix to memory
-   # create matrix called currentmatrix = []
-   # save input file matrix to variable currentmatrix
-   # create matrix called nextmatrix = []
-   # perform actions on currentmatrix and save results to nextmatrix
-   #     after all actions performed
-   #           make currentmatrix = nextmatrix
-   #           clear nextmatrix 
-
-
 
 if __name__ == "__main__":
    main(sys.argv[1:])
